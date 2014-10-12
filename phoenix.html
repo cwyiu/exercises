@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>bird</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"> 
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="black" name="apple-mobile-web-app-status-bar-style">
+    <meta content="telephone=no" name="format-detection"> 
+    <script>
+      var MAX_WIDTH = 340, MAX_HEIGHT = 600;
+      var intv = null;
+      var object0;
+      var blockArr = [];
+      var canvas;
+      var context;
+      var level = 1, originDist = 250;
+      window.onload = function(){
+        canvas = document.getElementById("canvas");
+        canvas.width = MAX_WIDTH;
+        canvas.height = MAX_HEIGHT;
+        context = canvas.getContext("2d");
+        object0 = createBird(100, MAX_HEIGHT/2);
+        renderBird(context, object0);
+        renderText(context, "PHOENIX", 30, 200, "60px Arial bold", "#0000ff", 3)
+        renderText(context, "START", MAX_WIDTH/2 - 50, MAX_HEIGHT/2 + 200, "30px Arial bold", "#003300", 1);
+        for(var i=1; i<=5; i++){
+          blockArr.push(createBlock(i*300, 0));
+        }
+        renderBlock(context, blockArr[0]);
+        object0.nextBlock = blockArr[0];
+        
+        document.onkeyup = keyup;
+        canvas.onmouseup = mouseup;
+      }
+      
+      function start(){
+        intv = setInterval(function(){
+          context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+          if(object0.state=="dead"){
+            renderDeadBird(context, object0);
+          }else{
+            renderBird(context, object0);
+          }
+          updateBird(object0);
+
+          for(var i=0; i<blockArr.length; i++){
+            var block = blockArr[i];
+            renderBlock(context, block);
+            updateBlock(block);
+            if(object0.score!=1 && object0.score%10==1){
+                level = parseInt(object0.score/10)+1;
+            }
+            if(block.x + block.width <= 0){
+              blockArr.splice(i,1);
+              i--;
+              blockArr.push(createBlock(blockArr[blockArr.length-1].x+300, 0));
+              blockArr[blockArr.length-1].dist = originDist - (level - 1 ) * 20;
+            }
+          }
+          if(blockArr[0].x + blockArr[0].width + object0.r == 100){
+            object0.score++;
+            object0.nextBlock = blockArr[1];
+          }
+          renderText(context, "LEVEL: " + level, MAX_WIDTH - 150, 20, "20px courier bold", "red", 1);
+          renderText(context, "SCORE: " + object0.score, MAX_WIDTH - 150, 50, "20px courier bold", "red", 1);
+        }, 100);
+      }
+      
+      function createBird(x, y){
+        return {
+          x:x, y:y, r:40, vx:10, vy:-50, g:15, score:0, direction:"d", state:"alive",
+          bColor:"red", hColor:"#BB0033", wColor:"#CC9966", mColor:"#660099", eColor:"#00cc00",
+          nextBlock:null
+        }
+      }
+      
+      function createBlock(x, y){
+        return {
+          x:x, y:y, width:80, height:0, vx:-10, dist:originDist, color:"#99cc00"
+        }
+      }
+      
+      function renderBird(ctx, obj){
+        ctx.beginPath();
+        ctx.fillStyle = obj.bColor;
+        ctx.arc(obj.x, obj.y, obj.r, 0, Math.PI, false);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = "#99CCFF";
+        ctx.arc(obj.x-obj.r/2, obj.y-obj.r*1/4, obj.r/2, 0, Math.PI, false);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.fillStyle = obj.hColor;
+        ctx.arc(obj.x+obj.r/2, obj.y, obj.r/2, Math.PI, 2*Math.PI, false);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = obj.wColor;
+        var eyeAngle = 0;
+        if(obj.direction=="u"){
+          ctx.arc(obj.x-4, obj.y+14, 28, - Math.PI/8, Math.PI*7/8, false);
+          eyeAngle = 1;
+          obj.direction = "d";
+        }else if(obj.direction=="d"){
+          ctx.arc(obj.x-4, obj.y+14, 28, Math.PI- Math.PI/8, Math.PI*2 - Math.PI/8, false);
+          obj.direction = "u";
+          eyeAngle = 2;
+        }
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = obj.mColor;
+        ctx.fillRect(obj.x+obj.r, obj.y-4, 15, 8);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(obj.x+obj.r*3/4, obj.y-obj.r/4, 4, 0, eyeAngle* Math.PI, false);
+        ctx.fillStyle = obj.eColor
+        ctx.fill();
+      }
+      
+      function renderDeadBird(ctx, obj){
+        ctx.beginPath();
+        ctx.fillStyle = obj.bColor;
+        ctx.arc(obj.x, obj.y, obj.r,  Math.PI/2, Math.PI*3/2, false);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = "#99CCFF";
+        ctx.arc(obj.x+obj.r*1/4, obj.y-obj.r/2, obj.r/2, Math.PI/2, Math.PI*3/2, false);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.fillStyle = obj.hColor;
+        ctx.arc(obj.x, obj.y+obj.r/2, obj.r/2, Math.PI*3/2, Math.PI/2, false);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = obj.wColor;
+        var eyeAngle = 0;
+        if(obj.direction=="u"){
+          ctx.arc(obj.x-12, obj.y-8, 28, - Math.PI*5/8,  Math.PI*3/8, false);
+          eyeAngle = 1;
+          obj.direction = "d";
+        }else if(obj.direction=="d"){
+          ctx.arc(obj.x-12, obj.y-8, 28, Math.PI- Math.PI*5/8, Math.PI*2- Math.PI*5/8, false);
+          obj.direction = "u";
+          eyeAngle = 2;
+        }
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = obj.mColor;
+        ctx.fillRect(obj.x+10, obj.y+obj.r-8, 15, 8);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(obj.x+obj.r*1/4, obj.y+obj.r*3/4, 4, 0, eyeAngle* Math.PI, false);
+        ctx.fillStyle = obj.eColor
+        ctx.fill();
+      }
+      
+      function updateBird(obj){
+        obj.y += obj.g;
+        if(obj.x+obj.r + 8 > MAX_WIDTH){
+          obj.x = MAX_WIDTH - obj.r - 8;
+          obj.y+=obj.vy;
+        }
+        var currBlock = object0.nextBlock;
+
+        if(obj.x + obj.r*3/4 >= currBlock.x){
+          if(obj.y - obj.r/2 <= currBlock.height || obj.y + obj.r/2 >= currBlock.height + currBlock.dist ){
+            for(var i=0; i<blockArr.length; i++){
+              blockArr[i].vx = 0;
+              object0.state = "dead";
+            }
+          }
+        }
+
+        if(obj.y + obj.r > MAX_HEIGHT){
+          obj.y = MAX_HEIGHT - obj.r;
+          object0.state = "dead";
+
+          setTimeout(function(){
+            clearInterval(intv);
+            renderText(context, "GAME  OVER", 30, MAX_HEIGHT/2, "45px Arial Bold", "red", 2);
+          },2000)
+        }
+        if(obj.y - obj.r/2 < 0){
+          obj.y = obj.r/2;
+        }
+      }
+      
+      function updateBlock(obj){
+        obj.x += obj.vx;
+      }
+
+      function setFly(obj){
+        if(obj.state != "dead"){
+          obj.y += obj.vy;
+        }
+      }
+      
+      function renderBlock(ctx, obj){
+        if(obj.height==0){
+          obj.height = parseInt(Math.random() * (MAX_HEIGHT - obj.dist));
+        }
+        ctx.beginPath();
+        ctx.fillStyle = obj.color;
+        ctx.fillRect(obj.x, 0, obj.width, obj.height);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = obj.color;
+        ctx.fillRect(obj.x, obj.height + obj.dist, obj.width, MAX_HEIGHT - obj.height - obj.dist);
+        ctx.fill();
+      }
+      
+      function renderText(ctx, text, x, y, fontstyle, color, width){
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.font = fontstyle;
+        if(width){
+          ctx.lineWidth = width;
+        }
+        ctx.strokeText(text, x, y);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+      
+      function keyup(e){
+         var e=e||event;
+         var currKey=e.keyCode||e.which||e.charCode;
+         if(currKey==32){
+          if(intv==null){
+            start();
+          }
+          setFly(object0);
+         }
+      }
+      
+      function mouseup(e){
+        if(intv==null){
+          start();
+        }
+        setFly(object0);
+      }
+
+    </script>
+  </head>
+  <body>
+   <canvas id="canvas" style="border:#aaa 1px solid;display:block;margin:0px auto;background:#99CCFF;"></canvas>
+  </body>
+</html>
