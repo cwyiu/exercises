@@ -30,7 +30,8 @@
         object0.nextBlock = blockArr[0];
         
         document.onkeyup = keyup;
-        canvas.onmouseup = mouseup;
+        //canvas.onmouseup = mouseup;
+        canvas.addEventListener("touchend", mouseup, false);
       }
       
       function start(){
